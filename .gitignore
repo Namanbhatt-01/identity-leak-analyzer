@@ -1,0 +1,57 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+identity_leak_analyzer
+build/
+bin/
+lib/
+
+# CMake temporary files
+CMakeCache.txt
+CMakeFiles/
+CMakeSettings.json
+cmake_install.cmake
+install_manifest.txt
+Makefile
+
+# Compile commands database
+compile_commands.json
+
+# Local configurations / reports
+*report.json
+*report.txt
+cookies.txt
+session_cookies.txt
+
+# Editor / IDE folders
+.vscode/
+.idea/
+.clang-format
+.DS_Store
+.cache/
