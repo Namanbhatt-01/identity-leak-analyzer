@@ -1,4 +1,4 @@
-{"version": 2, "width": 80, "height": 24, "timestamp": 1781891335, "env": {"SHELL": "/bin/zsh", "TERM": null}}
+{"version": 2, "width": 80, "height": 24, "timestamp": 1781891335, "env": {"SHELL": "/bin/zsh", "TERM": "xterm-256color"}}
 [0.692617, "o", "\u001b[1;34m[+] STEP 1: Configuring and Rebuilding Library and Binaries\u001b[0m\r\n"]
 [1.831282, "o", "-- Configuring done (0.1s)\r\n"]
 [1.843709, "o", "-- Generating done (0.0s)\r\n"]

@@ -3,7 +3,11 @@
 A namespaced, library-grade C++ intelligence analysis engine designed to demonstrate robust multi-threading, thread-safe data synchronization, cryptographic input anonymization, and input sanitization paradigms. 
 
 ### 📺 Interactive Terminal Demo
+
+[![asciicast](https://asciinema.org/a/cmsJzxNdcIECRhcK.svg)](https://asciinema.org/a/cmsJzxNdcIECRhcK)
+
 This repository includes a recorded terminal session demonstrating target compilation, concurrent proxy routing logs, and input validation engine blocking in real-time.
+
 To play the recording locally in your terminal, run:
 ```bash
 asciinema play demo.cast
