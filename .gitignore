@@ -52,6 +52,5 @@ session_cookies.txt
 # Editor / IDE folders
 .vscode/
 .idea/
-.clang-format
 .DS_Store
 .cache/
