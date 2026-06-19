@@ -1,6 +1,9 @@
-# Multi-Threaded Identity Leak Analyzer
+# Multi-Threaded Identity Leak Analyzer (Offline Simulation)
 
-A namespaced, library-grade C++ intelligence analysis engine designed to demonstrate robust multi-threading, thread-safe data synchronization, cryptographic input anonymization, and input sanitization paradigms. 
+A namespaced, library-grade C++ simulation framework designed to demonstrate production-level multi-threading, thread-safe data synchronization, cryptographic input anonymization, and defensive input sanitization paradigms.
+
+> [!IMPORTANT]
+> **Offline Simulation & Local Mock Data**: This repository is a simulated demonstration environment and runs **entirely offline**. It does **not** connect to live external servers, perform active scraping, or query real-world leak databases. Instead, it uses pre-configured mock tables and locally defined mock network routing behaviors (e.g. SOCKS5 proxy logs) to simulate production threat intelligence pipelines. This keeps the environment safe, compliant, and easy to run immediately upon cloning without external API dependencies.
 
 ### 📺 Interactive Terminal Demo
 
