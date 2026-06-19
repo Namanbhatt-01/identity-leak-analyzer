@@ -31,3 +31,9 @@ add_executable(identity_leak_analyzer
 find_package(Threads REQUIRED)
 target_link_libraries(analyzer_core PUBLIC Threads::Threads)
 target_link_libraries(identity_leak_analyzer PRIVATE analyzer_core)
+
+# Define unit tests target
+add_executable(leak_analyzer_tests
+    tests/test_suite.cpp
+)
+target_link_libraries(leak_analyzer_tests PRIVATE analyzer_core)

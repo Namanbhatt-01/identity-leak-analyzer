@@ -70,10 +70,19 @@ cd identity_leak_analyzer
 cmake -B build -S .
 
 # Compile the target binary
+# Compile all targets including unit tests
 cmake --build build
 ```
 
-The compiled binary will be placed inside the `build/` directory as `identity_leak_analyzer`.
+The compiled binaries will be placed inside the `build/` directory.
+
+### Running Unit Tests
+
+To run the automated validation test suite (which verifies SHA-256 generation, input whitelisting, profile parsing, rate-limiting, and concurrent database storage safety):
+
+```bash
+./build/leak_analyzer_tests
+```
 
 ---
 
