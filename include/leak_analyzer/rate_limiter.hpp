@@ -6,56 +6,84 @@
 #include <mutex>
 #include <chrono>
 #include <thread>
+#include <algorithm>
 
 namespace leak_analyzer {
 
-struct DomainLimiter {
-    std::chrono::steady_clock::time_point last_request;
-    uint64_t min_delay_ms;
+struct TokenBucket {
+    double capacity;
+    double tokens;
+    double refill_rate_per_ms; // Tokens added per millisecond
+    std::chrono::steady_clock::time_point last_update;
 };
 
 class RateLimiter {
 private:
-    std::unordered_map<std::string, DomainLimiter> limiters;
+    std::unordered_map<std::string, TokenBucket> limiters;
     mutable std::mutex limiter_mutex;
 
 public:
     RateLimiter() = default;
 
     void acquire(const std::string& platform) {
-        std::lock_guard<std::mutex> lock(limiter_mutex);
+        std::unique_lock<std::mutex> lock(limiter_mutex);
 
-        uint64_t min_delay_ms = 300;
-        if (platform == "Instagram" || platform == "LinkedIn") {
-            min_delay_ms = 1000;
+        // Default Token Bucket configuration: Capacity of 5.0, refills 1 token per 200ms (0.005 tokens/ms)
+        double capacity = 5.0;
+        double refill_rate_per_ms = 0.005;
+
+        // Custom rate limits for critical / slower platforms to prevent simulated DDoS
+        if (platform == "Instagram" || platform == "LinkedIn" || platform == "Modbus_TCP" || platform == "DNP3" || platform == "IEC_104") {
+            capacity = 2.0;
+            refill_rate_per_ms = 0.001; // Refills 1 token per 1000ms (0.001 tokens/ms)
         }
 
         auto now = std::chrono::steady_clock::now();
         auto it = limiters.find(platform);
         if (it == limiters.end()) {
-            DomainLimiter dl;
-            dl.last_request = now;
-            dl.min_delay_ms = min_delay_ms;
-            limiters[platform] = dl;
+            TokenBucket tb;
+            tb.capacity = capacity;
+            tb.tokens = capacity - 1.0; // Consume 1 token immediately
+            tb.refill_rate_per_ms = refill_rate_per_ms;
+            tb.last_update = now;
+            limiters[platform] = tb;
             return;
         }
 
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second.last_request).count();
-        if (elapsed < static_cast<long long>(it->second.min_delay_ms)) {
-            long long wait_time = it->second.min_delay_ms - elapsed;
-            std::this_thread::sleep_for(std::chrono::milliseconds(wait_time));
-        }
+        auto& tb = it->second;
 
-        limiters[platform].last_request = std::chrono::steady_clock::now();
+        while (true) {
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - tb.last_update).count();
+            tb.tokens = std::min(tb.capacity, tb.tokens + elapsed * tb.refill_rate_per_ms);
+            tb.last_update = now;
+
+            if (tb.tokens >= 1.0) {
+                tb.tokens -= 1.0;
+                break;
+            }
+
+            // Calculate wait time until next token is available
+            double needed = 1.0 - tb.tokens;
+            double wait_ms = needed / tb.refill_rate_per_ms;
+            lock.unlock();
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(wait_ms)));
+            lock.lock();
+            now = std::chrono::steady_clock::now();
+        }
     }
 
-    void set_limit(const std::string& platform, uint64_t min_delay_ms) {
+    void set_limit(const std::string& platform, uint64_t capacity_val, uint64_t refill_interval_ms) {
         std::lock_guard<std::mutex> lock(limiter_mutex);
-        limiters[platform].min_delay_ms = min_delay_ms;
-        limiters[platform].last_request = std::chrono::steady_clock::now() - std::chrono::seconds(10);
+        TokenBucket tb;
+        tb.capacity = static_cast<double>(capacity_val);
+        tb.tokens = tb.capacity;
+        tb.refill_rate_per_ms = 1.0 / static_cast<double>(refill_interval_ms);
+        tb.last_update = std::chrono::steady_clock::now();
+        limiters[platform] = tb;
     }
 };
 
 } // namespace leak_analyzer
 
 #endif // RATE_LIMITER_HPP
+

@@ -67,6 +67,21 @@ public:
                 return ProfileStatus::Private;
             }
         }
+        else if (platform == "Modbus_TCP") {
+            if (lower.find("unauthorized_write") != std::string::npos || lower.find("fc:5") != std::string::npos) {
+                return ProfileStatus::Blocked; // Flagged/Blocked due to OT command validation anomaly
+            }
+        }
+        else if (platform == "DNP3") {
+            if (lower.find("analog_change") != std::string::npos) {
+                return ProfileStatus::Blocked; // Flagged/Blocked due to unsolicited controller state change
+            }
+        }
+        else if (platform == "IEC_104") {
+            if (lower.find("spurious_command") != std::string::npos) {
+                return ProfileStatus::Blocked; // Flagged/Blocked due to command structure out-of-bounds anomaly
+            }
+        }
 
         return ProfileStatus::Exists;
     }

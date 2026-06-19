@@ -39,6 +39,12 @@
       } else if (username == "captcha_session") {
         ss << "user:captcha_session; id:3302; "
               "email:captcha_user@developer.net; tag:api; tag:captcha";
+      } else if (username == "modbus_gateway") {
+        ss << "user:modbus_gateway; id:9001; email:operator@powertrans.gov.in; tag:critical; tag:unauthorized_write; fc:5; register:40001";
+      } else if (username == "dnp3_rtu") {
+        ss << "user:dnp3_rtu; id:9002; email:telecom_admin@bsnl.nic.in; tag:critical; tag:analog_change; outstation:10";
+      } else if (username == "iec104_substation") {
+        ss << "user:iec104_substation; id:9003; email:sysadmin@gridcontrol.in; tag:critical; tag:spurious_command; asdu:36";
       } else {
         ss << "user:" << username << "; id:7701; email:" << username
            << "@generic_domain.net; tag:external";

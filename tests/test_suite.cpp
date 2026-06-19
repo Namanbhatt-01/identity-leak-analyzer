@@ -131,8 +131,8 @@ void test_thread_safe_store() {
 void test_rate_limiter() {
     RateLimiter limiter;
     
-    // Set a very short rate limit for test speed
-    limiter.set_limit("TestPlatform", 50); // 50ms min delay
+    // Set a very short rate limit for test speed (capacity 1, refill 1 token per 50ms)
+    limiter.set_limit("TestPlatform", 1, 50);
     
     auto start = std::chrono::steady_clock::now();
     limiter.acquire("TestPlatform"); // First request registers timestamp

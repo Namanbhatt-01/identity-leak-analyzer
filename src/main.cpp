@@ -35,6 +35,80 @@ bool is_json_output(const std::string& path) {
     return false;
 }
 
+bool is_stix_output(const std::string& path) {
+    if (path.length() >= 10) {
+        return path.compare(path.length() - 10, 10, ".stix.json") == 0;
+    }
+    return false;
+}
+
+void write_stix_report(const std::string& path, const std::vector<AnalysisResult>& reports, double duration, Logger& logger) {
+    (void)duration; // Suppress unused parameter warnings
+    std::ofstream file(path);
+    if (!file.is_open()) {
+        logger.bad("Failed to open STIX report path: " + path);
+        return;
+    }
+
+    file << "{\n"
+         << "  \"type\": \"bundle\",\n"
+         << "  \"id\": \"bundle--71a62d08-2022-4a09-bc3d-82d2a58b21c4\",\n"
+         << "  \"spec_version\": \"2.1\",\n"
+         << "  \"objects\": [\n";
+
+    // Write a main Identity object representing the Analyzer Platform
+    file << "    {\n"
+         << "      \"type\": \"identity\",\n"
+         << "      \"id\": \"identity--9d8a1e2f-5b12-4f18-a621-a18a8db20b12\",\n"
+         << "      \"spec_version\": \"2.1\",\n"
+         << "      \"name\": \"NCIIPC CII Threat Intelligence Analyzer Core\",\n"
+         << "      \"identity_class\": \"system\",\n"
+         << "      \"description\": \"Automated multi-threaded security compliance auditor\"\n"
+         << "    }";
+
+    for (const auto& report : reports) {
+        file << ",\n";
+        std::string target_hash = SecurityUtils::generate_sha256(report.profile.email);
+        std::string indicator_uuid = "indicator--5f2c" + target_hash.substr(0, 8) + "-2b1a-4a7b-" + target_hash.substr(8, 4) + "-" + target_hash.substr(12, 12);
+        std::string obs_uuid = "observed-data--c8b4" + target_hash.substr(0, 8) + "-1d2c-4f7b-" + target_hash.substr(8, 4) + "-" + target_hash.substr(12, 12);
+
+        // Write Indicator Object
+        file << "    {\n"
+             << "      \"type\": \"indicator\",\n"
+             << "      \"id\": \"" << indicator_uuid << "\",\n"
+             << "      \"spec_version\": \"2.1\",\n"
+             << "      \"pattern\": \"[email-addr:value = '" << report.profile.email << "']\",\n"
+             << "      \"pattern_type\": \"stix\",\n"
+             << "      \"valid_from\": \"2026-06-19T23:47:00Z\",\n"
+             << "      \"name\": \"Credential exposure search for target: " << report.profile.username << "\",\n"
+             << "      \"description\": \"Simulated exposure matching target hash: " << target_hash << "\"\n"
+             << "    },\n";
+
+        // Write Observed Data Object
+        file << "    {\n"
+             << "      \"type\": \"observed-data\",\n"
+             << "      \"id\": \"" << obs_uuid << "\",\n"
+             << "      \"spec_version\": \"2.1\",\n"
+             << "      \"first_observed\": \"2026-06-19T23:47:00Z\",\n"
+             << "      \"last_observed\": \"2026-06-19T23:47:00Z\",\n"
+             << "      \"number_of_observed_data\": 1,\n"
+             << "      \"objects\": {\n"
+             << "        \"0\": {\n"
+             << "          \"type\": \"user-account\",\n"
+             << "          \"user_id\": \"" << report.profile.user_id << "\",\n"
+             << "          \"account_login\": \"" << report.profile.username << "\",\n"
+             << "          \"display_name\": \"" << report.profile.raw_source_platform << " Operator\"\n"
+             << "        }\n"
+             << "      }\n"
+             << "    }";
+    }
+
+    file << "\n  ]\n}\n";
+    file.close();
+    logger.good("STIX 2.1 compliant Threat Intelligence bundle successfully saved to: " + path);
+}
+
+
 // Function to verify credentials JSON structure
 bool verify_credentials_format(const std::string& path, Logger& logger) {
     std::ifstream file(path);
@@ -131,9 +205,9 @@ int main(int argc, char* argv[]) {
         inputs = {
             {"admin_zero", "Instagram"},
             {"private_user", "Instagram"},
-            {"blocked_session", "Twitter"},
-            {"notfound_user", "LinkedIn"},
-            {"captcha_session", "Instagram"}
+            {"modbus_gateway", "Modbus_TCP"},
+            {"dnp3_rtu", "DNP3"},
+            {"iec104_substation", "IEC_104"}
         };
     }
 
@@ -154,24 +228,28 @@ int main(int argc, char* argv[]) {
 
     std::ofstream out_file;
     bool output_json = false;
+    bool output_stix = false;
     if (!output_path.empty()) {
-        out_file.open(output_path);
-        if (out_file.is_open()) {
-            output_json = is_json_output(output_path);
-            if (output_json) {
-                out_file << "{\n"
-                         << "  \"telemetry\": {\n"
-                         << "    \"identities_processed\": " << global_store.size() << ",\n"
-                         << "    \"execution_time_seconds\": " << duration << ",\n"
-                         << "    \"proxy_configured\": " << (tor_proxy.empty() ? "false" : "true") << "\n"
-                         << "  },\n"
-                         << "  \"reports\": [\n";
+        output_stix = is_stix_output(output_path);
+        if (!output_stix) {
+            out_file.open(output_path);
+            if (out_file.is_open()) {
+                output_json = is_json_output(output_path);
+                if (output_json) {
+                    out_file << "{\n"
+                             << "  \"telemetry\": {\n"
+                             << "    \"identities_processed\": " << global_store.size() << ",\n"
+                             << "    \"execution_time_seconds\": " << duration << ",\n"
+                             << "    \"proxy_configured\": " << (tor_proxy.empty() ? "false" : "true") << "\n"
+                             << "  },\n"
+                             << "  \"reports\": [\n";
+                } else {
+                    out_file << "C++ Identity Leak Analyzer Telemetry Report\n";
+                    out_file << "===========================================\n";
+                }
             } else {
-                out_file << "C++ Identity Leak Analyzer Telemetry Report\n";
-                out_file << "===========================================\n";
+                logger.bad("Failed to open output report path: " + output_path);
             }
-        } else {
-            logger.bad("Failed to open output report path: " + output_path);
         }
     }
 
@@ -261,6 +339,8 @@ int main(int argc, char* argv[]) {
         }
         out_file.close();
         logger.good("Security intelligence report successfully saved to: " + output_path);
+    } else if (output_stix) {
+        write_stix_report(output_path, reports, duration, logger);
     }
 
     logger.good("System analysis complete.");
